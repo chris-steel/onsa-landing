@@ -7,9 +7,14 @@ import { Timer, TrendingDown, CheckCheck, Users } from 'lucide-react';
 export default function Home() {
   const emailHeroRef = useRef<HTMLInputElement>(null);
   const emailFooterRef = useRef<HTMLInputElement>(null);
+  const hpHeroRef = useRef<HTMLInputElement>(null);
+  const hpCtaRef = useRef<HTMLInputElement>(null);
   const [heroEmail, setHeroEmail] = useState('');
   const [ctaEmail, setCtaEmail] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [heroError, setHeroError] = useState('');
+  const [ctaError, setCtaError] = useState('');
   const router = useRouter();
 
   function scrollToAccess() {
@@ -21,9 +26,26 @@ export default function Home() {
     }
   }
 
-  function submitEmail(email: string) {
-    if (!email.trim()) return;
-    router.push(`/early-access?email=${encodeURIComponent(email.trim())}`);
+  async function submitEmail(email: string, hpRef: React.RefObject<HTMLInputElement | null>, setError: (e: string) => void) {
+    if (!email.trim() || submitting) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/early-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), _hp: hpRef.current?.value ?? '' }),
+      });
+      if (res.ok) {
+        router.push('/thanks');
+      } else {
+        setError('Something went wrong. Please try again.');
+        setSubmitting(false);
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -47,6 +69,9 @@ export default function Home() {
         .lp-section-header p { font-size: 18px; color: var(--lp-muted); max-width: 480px; }
         .lp-btn-orange { display: inline-flex; align-items: center; padding: 14px 22px; border-radius: 8px; border: 2px solid transparent; background-color: var(--lp-orange); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; line-height: 1; }
         .lp-btn-orange:hover { background-color: var(--lp-orange-hv); border-color: transparent; }
+
+        /* ── Honeypot ── */
+        .lp-hp { position: absolute; left: -9999px; opacity: 0; pointer-events: none; }
 
         /* ── Hero ── */
         .lp-hero { max-width: 1200px; margin: 0 auto; padding: 88px 48px 64px; display: flex; gap: 64px; align-items: center; }
@@ -188,7 +213,8 @@ export default function Home() {
             </span>
             <h1>You set up the job. Onsa books the interview.</h1>
             <p className="lp-hero-sub">Onsa emails your client for availability, invites candidates to self-book, and confirms the interview. You just kick it off.</p>
-            <form className="lp-hero-form" onSubmit={e => { e.preventDefault(); submitEmail(heroEmail); }}>
+            <form className="lp-hero-form" onSubmit={e => { e.preventDefault(); submitEmail(heroEmail, hpHeroRef, setHeroError); }}>
+              <input className="lp-hp" ref={hpHeroRef} type="text" name="_hp" tabIndex={-1} autoComplete="off" />
               <input
                 ref={emailHeroRef}
                 type="email"
@@ -197,8 +223,9 @@ export default function Home() {
                 placeholder="Email address"
                 required
               />
-              <button type="submit" className="lp-btn-orange">Get started</button>
+              <button type="submit" className="lp-btn-orange" disabled={submitting}>{submitting ? 'Sending…' : 'Get started'}</button>
             </form>
+            {heroError && <p style={{ fontSize: 14, color: '#c0392b', marginTop: 4 }}>{heroError}</p>}
           </div>
 
           <div className="lp-hero-right">
@@ -310,7 +337,8 @@ export default function Home() {
       {/* ══════════ EARLY ACCESS ══════════ */}
       <section id="early-access" className="lp-cta">
         <h2>Get early access.</h2>
-        <form className="lp-cta-form" onSubmit={e => { e.preventDefault(); submitEmail(ctaEmail); }}>
+        <form className="lp-cta-form" onSubmit={e => { e.preventDefault(); submitEmail(ctaEmail, hpCtaRef, setCtaError); }}>
+          <input className="lp-hp" ref={hpCtaRef} type="text" name="_hp" tabIndex={-1} autoComplete="off" />
           <input
             ref={emailFooterRef}
             type="email"
@@ -319,8 +347,9 @@ export default function Home() {
             placeholder="Email address"
             required
           />
-          <button type="submit" className="lp-btn-orange">Get started</button>
+          <button type="submit" className="lp-btn-orange" disabled={submitting}>{submitting ? 'Sending…' : 'Get started'}</button>
         </form>
+        {ctaError && <p style={{ fontSize: 14, color: 'rgba(255,100,80,0.9)', marginTop: -32 }}>{ctaError}</p>}
         <div className="lp-whats-next">
           <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--lp-orange)', margin: 0 }}>What happens next</p>
           <ol>
