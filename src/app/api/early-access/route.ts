@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     if (notifyEmail) {
       await resend.emails.send({
-        from: 'Onsa <hello@onsa.app>',
+        from: 'Onsa <hello@email.onsa.app>',
         to: notifyEmail,
         subject: `Early access signup: ${email}`,
         html: `<p style="font-family:sans-serif;font-size:15px;">New early access signup: <strong>${email}</strong></p>`,
